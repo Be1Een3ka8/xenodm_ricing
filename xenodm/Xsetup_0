@@ -1,0 +1,51 @@
+#!/bin/sh
+# $OpenBSD: Xsetup_0,v 1.6 2019/06/29 13:33:06 espie Exp $
+
+xrandr --output default --dpi 96
+
+# requires pkg_add terminus-font
+xset fp+ /usr/local/share/fonts/terminus
+
+# set background color
+#BG_COLOR=$(xrdb -query | awk '/xroot.background/ { print $2 }')
+#BG_COLOR="#2e3440"
+BG_COLOR="#203051"
+xsetroot -solid $BG_COLOR
+
+# show BluePuffy
+/usr/local/bin/feh -B $BG_COLOR -g 192x192+584+144 -. -Z /etc/X11/xenodm/pixmaps/bluepuffy.gif &
+
+# show the Sleep / Restart / Shutdown bar
+# in case of sleep, pop xmessage again after waking up
+(
+while true; do
+  xmessage -geometry +540-32 \
+    -buttons "[ Sleep ]":20,"[ Restart ]":21,"[ Shutdown ]":22 ""
+  ACTION=$?
+  echo "Xmessage said: $ACTION"
+  if   [ $ACTION -eq 20 ]; then /usr/sbin/zzz;
+  elif [ $ACTION -eq 21 ]; then
+    xsetroot -cursor_name watch
+    /sbin/shutdown -r now
+  elif [ $ACTION -eq 22 ]; then
+    xsetroot -cursor_name watch
+    /sbin/shutdown -p now
+  else echo "Something bad happened to Xmessage.";
+  fi
+  # stop looping if xclock died (hopefully killed by GiveConsole)
+  if [ -z "$(pgrep -U root xclock)" ]; then break; fi
+done
+) &
+
+OS_NAME=$(uname -n)
+OS_INFO=$(uname -smr)
+xclock -geometry -0+0 \
+  -strftime "$OS_NAME ($OS_INFO) | %a. %d %b. %Y  %H:%M " &
+#  then uncomment:
+#
+#if test -x /usr/local/bin/openbsd-wallpaper
+#then
+#	/usr/local/bin/openbsd-wallpaper
+#fi
+
+# sxpm OpenBSD.xpm &
